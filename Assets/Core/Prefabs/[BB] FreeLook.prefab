@@ -16,6 +16,8 @@ GameObject:
   - component: {fileID: 1982895397614513425}
   - component: {fileID: 3530690149642816919}
   - component: {fileID: 5127460444364268524}
+  - component: {fileID: 7633548659504060614}
+  - component: {fileID: 6839370599891840117}
   m_Layer: 0
   m_Name: '[BB] FreeLook'
   m_TagString: Untagged
@@ -262,3 +264,45 @@ MonoBehaviour:
     NearLimit: 5
     FarLimit: 30
     MaxQualityBoost: 0.2
+--- !u!114 &7633548659504060614
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6975703217737167676}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
+  GlobalObjectIdHash: 2518817985
+  InScenePlacedSourceGlobalObjectIdHash: 0
+  DeferredDespawnTick: 0
+  Ownership: 1
+  AlwaysReplicateAsRoot: 0
+  SynchronizeTransform: 1
+  ActiveSceneSynchronization: 0
+  SceneMigrationSynchronization: 1
+  SpawnWithObservers: 1
+  DontDestroyWithOwner: 0
+  AutoObjectParentSync: 1
+  SyncOwnerTransformWhenParented: 1
+  AllowOwnerToParent: 0
+--- !u!114 &6839370599891840117
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6975703217737167676}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 396cfa9f2d7176744941e46ea9a6aaa7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Blocks.Gameplay.Shooter::Blocks.Gameplay.Core.HitFeedbackController
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_ShowDamageNumbers: 1
+  m_DamageNumberDuration: 1.5
+  m_DamageNumberOffset: 0.5
+  m_HitSound: {fileID: 11400000, guid: a33731067c5cbe348b2c7a9de06b59ca, type: 2}

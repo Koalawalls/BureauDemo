@@ -277,10 +277,25 @@ namespace Blocks.Gameplay.Core
         /// Updates the character's alive state based on the primary stat.
         /// Runs on all clients whenever stats change.
         /// </summary>
+         
+        public event System.Action<bool> AliveStateChanged;
+
         private void UpdateAliveState()
         {
-            var primaryStatValue = GetCurrentValue(statsConfig.PrimaryStatHash);
-            IsAlive = primaryStatValue > 0;
+            float primaryStatValue =
+                GetCurrentValue(statsConfig.PrimaryStatHash);
+
+            bool isAlive =
+                primaryStatValue > 0f;
+
+            if (IsAlive == isAlive)
+            {
+                return;
+            }
+
+            IsAlive = isAlive;
+
+            AliveStateChanged?.Invoke(IsAlive);
         }
 
         /// <summary>
