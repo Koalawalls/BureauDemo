@@ -24,6 +24,7 @@ GameObject:
   - component: {fileID: -9189139118810208928}
   - component: {fileID: 681490675988942668}
   - component: {fileID: 8878201567553631537}
+  - component: {fileID: 4354087686482417715}
   m_Layer: 0
   m_Name: Enemy_Base
   m_TagString: Untagged
@@ -206,6 +207,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 924eccc476e1fcd4a80e6c33f585e291, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TheBureau.Gameplay.Enemies.EnemyMotor
+  m_LogNavigation: 0
 --- !u!114 &7978019486146437928
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -338,6 +340,29 @@ MonoBehaviour:
   m_VisionSensor: {fileID: 5335859330203441855}
   m_VisualMemoryDuration: 5
   m_LogPerception: 0
+--- !u!114 &4354087686482417715
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6180518923710839970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c70cadf03a74b064eb9eab5f826bef53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheBureau.Gameplay.Perception.HearingSensor
+  m_HearingOrigin: {fileID: 4867976028089093873}
+  m_HearingHeightOffset: 1.5
+  m_HearingSensitivity: 1
+  m_MinimumAudibility: 0.05
+  m_OcclusionLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_OccludedAudibilityMultiplier: 0.35
+  m_IgnoreOwnSource: 1
+  m_LogHeardNoises: 1
+  m_LogRejectedNoises: 0
 --- !u!1 &7607016883212228217
 GameObject:
   m_ObjectHideFlags: 0

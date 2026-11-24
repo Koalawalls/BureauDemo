@@ -2,12 +2,16 @@ using UnityEngine;
 using Unity.Netcode;
 using Unity.Cinemachine;
 using Blocks.Gameplay.Core;
+using TheBureau.Gameplay.Perception;
 
 namespace Blocks.Gameplay.Shooter
 {
     /// <summary>
-    /// A modular weapon system that handles firing, reloading, spread, and obstruction detection.
-    /// Uses a component-based architecture with <see cref="IFiringMechanism"/> and <see cref="IShootingBehavior"/>
+    /// A modular weapon system that handles firing, reloading, spread,
+    /// obstruction detection, and gameplay noise emission.
+    ///
+    /// Uses a component-based architecture with
+    /// <see cref="IFiringMechanism"/> and <see cref="IShootingBehavior"/>
     /// to support different weapon types and firing patterns.
     /// </summary>
     [RequireComponent(typeof(AmmoHandler), typeof(SpreadHandler))]
@@ -17,46 +21,82 @@ namespace Blocks.Gameplay.Shooter
         #region Fields & Properties
 
         [Header("Data")]
-        [Tooltip("The weapon data ScriptableObject containing weapon configuration.")]
-        [SerializeField] private WeaponData weaponData;
+        [Tooltip(
+            "The weapon data ScriptableObject containing weapon configuration."
+        )]
+        [SerializeField]
+        private WeaponData weaponData;
 
         [Header("References")]
-        [Tooltip("The transform representing the muzzle point where projectiles spawn.")]
-        [SerializeField] private Transform muzzle;
-        [Tooltip("The point where bullet shell casings are ejected from.")]
-        [SerializeField] private Transform bulletShellEjectPoint;
+        [Tooltip(
+            "The transform representing the muzzle point where projectiles spawn."
+        )]
+        [SerializeField]
+        private Transform muzzle;
+
+        [Tooltip(
+            "The point where bullet shell casings are ejected from."
+        )]
+        [SerializeField]
+        private Transform bulletShellEjectPoint;
+
+        [Tooltip(
+            "Gameplay noise emitter used when this weapon fires."
+        )]
+        [SerializeField]
+        private NoiseEmitter noiseEmitter;
 
         [Header("Obstruction Check")]
-        [Tooltip("Layer mask used to detect obstructions between chest and muzzle.")]
-        [SerializeField] private LayerMask obstructionMask;
-        [Tooltip("Vertical offset from player position to chest height for obstruction checks.")]
-        [SerializeField] private float chestHeightOffset = 1.2f;
+        [Tooltip(
+            "Layer mask used to detect obstructions between chest and muzzle."
+        )]
+        [SerializeField]
+        private LayerMask obstructionMask;
+
+        [Tooltip(
+            "Vertical offset from player position to chest height for obstruction checks."
+        )]
+        [SerializeField]
+        private float chestHeightOffset = 1.2f;
 
         [Header("Broadcasting on")]
-        [Tooltip("Event raised when the weapon fires, passing the fire rate as a parameter.")]
-        [SerializeField] private FloatEvent onWeaponFiredEvent;
+        [Tooltip(
+            "Event raised when the weapon fires, passing the fire rate as a parameter."
+        )]
+        [SerializeField]
+        private FloatEvent onWeaponFiredEvent;
 
-        private static readonly int k_AnimIDIsColliding = Animator.StringToHash("IsColliding");
+        private static readonly int k_AnimIDIsColliding =
+            Animator.StringToHash("IsColliding");
 
         private bool m_FireButtonHeld;
         private bool m_WasMuzzleObstructed;
         private bool m_HasCachedObstructionData;
+
         private float m_CachedObstructionDistance;
+
         private Vector3 m_CachedObstructionDirection;
-        private Transform m_AimTransform;
-        private AmmoHandler m_AmmoHandler;
         private Vector3 m_LiveFireDirection;
+
+        private Transform m_AimTransform;
+
+        private AmmoHandler m_AmmoHandler;
         private SpreadHandler m_SpreadHandler;
         private WeaponStateManager m_StateManager;
+
         private IFiringMechanism m_FiringMechanism;
         private IShootingBehavior m_ShootingBehavior;
+
         private ShooterAddon m_OwnerPlayerManager;
-        private ShootingContext m_ShootingContext = new ShootingContext();
+
+        private ShootingContext m_ShootingContext =
+            new ShootingContext();
 
         /// <summary>
         /// Gets the transform representing the muzzle point of the weapon.
         /// </summary>
-        public Transform Muzzle => muzzle;
+        public Transform Muzzle =>
+            muzzle;
 
         #endregion
 
@@ -64,15 +104,36 @@ namespace Blocks.Gameplay.Shooter
 
         private void Awake()
         {
-            m_AmmoHandler = GetComponent<AmmoHandler>();
-            m_SpreadHandler = GetComponent<SpreadHandler>();
-            m_StateManager = GetComponent<WeaponStateManager>();
-            m_FiringMechanism = GetComponent<IFiringMechanism>();
-            m_ShootingBehavior = GetComponent<IShootingBehavior>();
+            m_AmmoHandler =
+                GetComponent<AmmoHandler>();
+
+            m_SpreadHandler =
+                GetComponent<SpreadHandler>();
+
+            m_StateManager =
+                GetComponent<WeaponStateManager>();
+
+            m_FiringMechanism =
+                GetComponent<IFiringMechanism>();
+
+            m_ShootingBehavior =
+                GetComponent<IShootingBehavior>();
+
+            if (noiseEmitter == null)
+            {
+                noiseEmitter =
+                    GetComponent<NoiseEmitter>();
+            }
 
             if (weaponData != null)
             {
-                m_AmmoHandler.Initialize(m_StateManager, this, weaponData.clipSize, weaponData.reloadTime);
+                m_AmmoHandler.Initialize(
+                    m_StateManager,
+                    this,
+                    weaponData.clipSize,
+                    weaponData.reloadTime
+                );
+
                 m_SpreadHandler.Initialize(
                     weaponData.minSpreadAngle,
                     weaponData.maxSpreadAngle,
@@ -83,39 +144,61 @@ namespace Blocks.Gameplay.Shooter
             }
             else
             {
-                Debug.LogError("WeaponData is not assigned in ModularWeapon!", this);
+                Debug.LogError(
+                    "WeaponData is not assigned in ModularWeapon!",
+                    this
+                );
             }
 
-            m_StateManager.Initialize(m_AmmoHandler, m_FiringMechanism);
+            m_StateManager.Initialize(
+                m_AmmoHandler,
+                m_FiringMechanism
+            );
 
             if (m_FiringMechanism != null)
             {
-                m_FiringMechanism.OnShouldFire += HandleFiringMechanismShot;
+                m_FiringMechanism.OnShouldFire +=
+                    HandleFiringMechanismShot;
             }
         }
 
+        /// <inheritdoc />
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+
             if (IsOwner)
             {
-                var ownerObject = NetworkManager.Singleton.SpawnManager.GetPlayerNetworkObject(OwnerClientId);
+                var ownerObject =
+                    NetworkManager.Singleton
+                        .SpawnManager
+                        .GetPlayerNetworkObject(
+                            OwnerClientId
+                        );
+
                 if (ownerObject != null)
                 {
-                    m_OwnerPlayerManager = ownerObject.GetComponent<ShooterAddon>();
+                    m_OwnerPlayerManager =
+                        ownerObject.GetComponent<ShooterAddon>();
+
                     if (m_OwnerPlayerManager?.AimController != null)
                     {
-                        m_AimTransform = m_OwnerPlayerManager.AimController.AimTransform;
+                        m_AimTransform =
+                            m_OwnerPlayerManager
+                                .AimController
+                                .AimTransform;
                     }
                 }
             }
         }
 
+        /// <inheritdoc />
         public override void OnNetworkDespawn()
         {
             if (m_FiringMechanism != null)
             {
-                m_FiringMechanism.OnShouldFire -= HandleFiringMechanismShot;
+                m_FiringMechanism.OnShouldFire -=
+                    HandleFiringMechanismShot;
             }
 
             base.OnNetworkDespawn();
@@ -123,25 +206,50 @@ namespace Blocks.Gameplay.Shooter
 
         private void Update()
         {
-            if (!HasAuthority) return;
+            if (!HasAuthority)
+            {
+                return;
+            }
 
             UpdateMuzzleObstructionState();
 
-            if (m_FireButtonHeld && m_OwnerPlayerManager?.AimController != null)
+            if (m_FireButtonHeld &&
+                m_OwnerPlayerManager?.AimController != null)
             {
-                Transform muzzleTransform = Muzzle ?? m_OwnerPlayerManager.AimController.AimTransform;
-                Vector3 aimTargetPosition = m_OwnerPlayerManager.AimController.PreciseAimTargetPosition;
-                m_LiveFireDirection = (aimTargetPosition - muzzleTransform.position).normalized;
+                Transform muzzleTransform =
+                    Muzzle ??
+                    m_OwnerPlayerManager
+                        .AimController
+                        .AimTransform;
+
+                Vector3 aimTargetPosition =
+                    m_OwnerPlayerManager
+                        .AimController
+                        .PreciseAimTargetPosition;
+
+                m_LiveFireDirection =
+                    (
+                        aimTargetPosition -
+                        muzzleTransform.position
+                    ).normalized;
             }
 
-            if (m_FiringMechanism != null && m_StateManager.CurrentState == WeaponState.ReadyToFire)
+            if (m_FiringMechanism != null &&
+                m_StateManager.CurrentState ==
+                WeaponState.ReadyToFire)
             {
-                m_FiringMechanism.UpdateFiring(Time.deltaTime);
+                m_FiringMechanism.UpdateFiring(
+                    Time.deltaTime
+                );
             }
 
-            if (m_ShootingBehavior != null && m_FireButtonHeld)
+            if (m_ShootingBehavior != null &&
+                m_FireButtonHeld)
             {
-                m_ShootingBehavior.UpdateShooting(m_LiveFireDirection, Time.deltaTime);
+                m_ShootingBehavior.UpdateShooting(
+                    m_LiveFireDirection,
+                    Time.deltaTime
+                );
             }
         }
 
@@ -152,21 +260,33 @@ namespace Blocks.Gameplay.Shooter
         /// <summary>
         /// Initializes the weapon with the provided data.
         /// </summary>
-        /// <param name="data">The weapon configuration data.</param>
-        public void Initialize(WeaponData data)
+        /// <param name="data">
+        /// The weapon configuration data.
+        /// </param>
+        public void Initialize(
+            WeaponData data)
         {
             if (data == null)
             {
-                Debug.LogError("Attempted to initialize ModularWeapon with null data!", this);
+                Debug.LogError(
+                    "Attempted to initialize ModularWeapon with null data!",
+                    this
+                );
+
                 return;
             }
 
-            weaponData = data;
+            weaponData =
+                data;
 
-            // Re-initialize handlers with new data
             if (m_AmmoHandler != null)
             {
-                m_AmmoHandler.Initialize(m_StateManager, this, weaponData.clipSize, weaponData.reloadTime);
+                m_AmmoHandler.Initialize(
+                    m_StateManager,
+                    this,
+                    weaponData.clipSize,
+                    weaponData.reloadTime
+                );
             }
 
             if (m_SpreadHandler != null)
@@ -177,15 +297,25 @@ namespace Blocks.Gameplay.Shooter
                     weaponData.spreadIncreasePerShot,
                     weaponData.spreadRecoveryRate,
                     weaponData.spreadRecoveryDelay
-                    );
+                );
             }
 
-            m_StateManager.Initialize(m_AmmoHandler, m_FiringMechanism);
+            m_StateManager.Initialize(
+                m_AmmoHandler,
+                m_FiringMechanism
+            );
 
             if (m_FiringMechanism != null)
             {
-                m_FiringMechanism.OnShouldFire -= HandleFiringMechanismShot; // Unsubscribe to avoid double sub
-                m_FiringMechanism.OnShouldFire += HandleFiringMechanismShot;
+                /*
+                 * Unsubscribe first to avoid duplicate event
+                 * registration if Initialize is called again.
+                 */
+                m_FiringMechanism.OnShouldFire -=
+                    HandleFiringMechanismShot;
+
+                m_FiringMechanism.OnShouldFire +=
+                    HandleFiringMechanismShot;
             }
         }
 
@@ -193,18 +323,33 @@ namespace Blocks.Gameplay.Shooter
         /// Initiates firing of the weapon.
         /// This should only be called on the owner's instance.
         /// </summary>
-        /// <param name="ownerCharacter">The character firing the weapon.</param>
-        /// <param name="fireOrigin">The origin point of the fire ray.</param>
-        /// <param name="fireDirection">The direction to fire in.</param>
-        public void Fire(GameObject ownerCharacter, Vector3 fireOrigin, Vector3 fireDirection)
+        /// <param name="ownerCharacter">
+        /// The character firing the weapon.
+        /// </param>
+        /// <param name="fireOrigin">
+        /// The origin point of the fire ray.
+        /// </param>
+        /// <param name="fireDirection">
+        /// The direction to fire in.
+        /// </param>
+        public void Fire(
+            GameObject ownerCharacter,
+            Vector3 fireOrigin,
+            Vector3 fireDirection)
         {
-            if (!IsOwner) return;
+            if (!IsOwner)
+            {
+                return;
+            }
+
             m_FireButtonHeld = true;
             m_LiveFireDirection = fireDirection;
 
             if (!CanFire())
             {
-                if (!m_AmmoHandler.HasAmmo() && m_StateManager.CurrentState == WeaponState.Empty)
+                if (!m_AmmoHandler.HasAmmo() &&
+                    m_StateManager.CurrentState ==
+                    WeaponState.Empty)
                 {
                     TryReload();
                 }
@@ -221,6 +366,7 @@ namespace Blocks.Gameplay.Shooter
         public void StopFiring()
         {
             m_FireButtonHeld = false;
+
             m_FiringMechanism?.StopFiring();
             m_ShootingBehavior?.StopShooting();
         }
@@ -228,10 +374,16 @@ namespace Blocks.Gameplay.Shooter
         /// <summary>
         /// Checks if the weapon can currently fire.
         /// </summary>
-        /// <returns>True if the weapon can fire, false otherwise.</returns>
+        /// <returns>
+        /// True if the weapon can fire; otherwise false.
+        /// </returns>
         public bool CanFire()
         {
-            return m_StateManager.CanFire() && m_ShootingBehavior != null && m_ShootingBehavior.CanShoot() && !IsMuzzleObstructed();
+            return
+                m_StateManager.CanFire() &&
+                m_ShootingBehavior != null &&
+                m_ShootingBehavior.CanShoot() &&
+                !IsMuzzleObstructed();
         }
 
         /// <summary>
@@ -240,7 +392,10 @@ namespace Blocks.Gameplay.Shooter
         /// </summary>
         public void TryReload()
         {
-            if (!IsOwner) return;
+            if (!IsOwner)
+            {
+                return;
+            }
 
             if (m_AmmoHandler.TryReload())
             {
@@ -252,89 +407,172 @@ namespace Blocks.Gameplay.Shooter
         /// <summary>
         /// Checks if this weapon is currently equipped by the owner.
         /// </summary>
-        /// <returns>True if equipped, false otherwise.</returns>
+        /// <returns>
+        /// True if equipped; otherwise false.
+        /// </returns>
         public bool IsEquipped()
         {
-            if (m_OwnerPlayerManager == null || m_OwnerPlayerManager.WeaponController == null)
+            if (m_OwnerPlayerManager == null ||
+                m_OwnerPlayerManager.WeaponController == null)
             {
                 return false;
             }
 
-            return ReferenceEquals(m_OwnerPlayerManager.WeaponController.CurrentWeapon, this);
+            return ReferenceEquals(
+                m_OwnerPlayerManager
+                    .WeaponController
+                    .CurrentWeapon,
+                this
+            );
         }
 
         /// <summary>
         /// Gets the weapon data ScriptableObject.
         /// </summary>
-        /// <returns>The weapon data.</returns>
-        public WeaponData GetWeaponData() => weaponData;
+        /// <returns>
+        /// The weapon data.
+        /// </returns>
+        public WeaponData GetWeaponData()
+        {
+            return weaponData;
+        }
 
         /// <summary>
-        /// Gets the current state of the weapon.
+        /// Gets the current weapon state.
         /// </summary>
-        /// <returns>The current weapon state.</returns>
-        public WeaponState GetCurrentState() => m_StateManager.CurrentState;
+        /// <returns>
+        /// The current weapon state.
+        /// </returns>
+        public WeaponState GetCurrentState()
+        {
+            return m_StateManager.CurrentState;
+        }
 
         /// <summary>
-        /// Gets the name of the weapon.
+        /// Gets the weapon name.
         /// </summary>
-        /// <returns>The weapon name.</returns>
-        public string GetWeaponName() => weaponData.weaponName;
+        /// <returns>
+        /// The weapon name.
+        /// </returns>
+        public string GetWeaponName()
+        {
+            return weaponData.weaponName;
+        }
 
         /// <summary>
-        /// Gets the current spread angle of the weapon.
+        /// Gets the current spread angle.
         /// </summary>
-        /// <returns>The current spread angle in degrees.</returns>
-        public float GetCurrentSpreadAngle() => m_SpreadHandler.CurrentSpreadAngle;
+        /// <returns>
+        /// Current spread angle in degrees.
+        /// </returns>
+        public float GetCurrentSpreadAngle()
+        {
+            return m_SpreadHandler.CurrentSpreadAngle;
+        }
 
         /// <summary>
         /// Checks if the weapon needs to be reloaded.
         /// </summary>
-        /// <returns>True if reload is needed, false otherwise.</returns>
-        public bool NeedsReload() => m_AmmoHandler.NeedsReload();
+        /// <returns>
+        /// True if reload is needed; otherwise false.
+        /// </returns>
+        public bool NeedsReload()
+        {
+            return m_AmmoHandler.NeedsReload();
+        }
 
         /// <summary>
-        /// Gets the current ammo count and max ammo capacity.
+        /// Gets the current ammo count and maximum capacity.
         /// </summary>
-        /// <param name="current">The current ammo count.</param>
-        /// <param name="max">The maximum ammo capacity.</param>
-        public void GetAmmoInfo(out int current, out int max) => m_AmmoHandler.GetAmmoInfo(out current, out max);
+        /// <param name="current">
+        /// Current ammunition.
+        /// </param>
+        /// <param name="max">
+        /// Maximum ammunition capacity.
+        /// </param>
+        public void GetAmmoInfo(
+            out int current,
+            out int max)
+        {
+            m_AmmoHandler.GetAmmoInfo(
+                out current,
+                out max
+            );
+        }
 
         /// <summary>
         /// Resets the weapon obstruction state to default values.
-        /// Call this when switching away from this weapon to ensure animator states are properly cleared.
+        /// Call when switching away from this weapon.
         /// </summary>
         public void ResetObstructionState()
         {
-            if (m_WasMuzzleObstructed)
+            if (!m_WasMuzzleObstructed)
             {
-                m_WasMuzzleObstructed = false;
-                m_HasCachedObstructionData = false;
-                m_OwnerPlayerManager?.ShooterAnimator?.Animator.SetBool(k_AnimIDIsColliding, false);
-                m_OwnerPlayerManager?.AimController?.SetWeaponObstructed(false);
+                return;
             }
+
+            m_WasMuzzleObstructed = false;
+            m_HasCachedObstructionData = false;
+
+            m_OwnerPlayerManager?
+                .ShooterAnimator?
+                .Animator
+                .SetBool(
+                    k_AnimIDIsColliding,
+                    false
+                );
+
+            m_OwnerPlayerManager?
+                .AimController?
+                .SetWeaponObstructed(false);
         }
 
         /// <summary>
         /// Plays a tracer effect from start to end position.
         /// </summary>
-        /// <param name="start">The start position of the tracer.</param>
-        /// <param name="end">The end position of the tracer.</param>
-        public void PlayTracerEffect(Vector3 start, Vector3 end)
+        /// <param name="start">
+        /// The start of the tracer.
+        /// </param>
+        /// <param name="end">
+        /// The end of the tracer.
+        /// </param>
+        public void PlayTracerEffect(
+            Vector3 start,
+            Vector3 end)
         {
-            PlayTracerEffectRpc(start, end);
+            PlayTracerEffectRpc(
+                start,
+                end
+            );
         }
 
         /// <summary>
         /// Plays an impact effect at the specified position.
         /// </summary>
-        /// <param name="position">The position of the impact.</param>
-        /// <param name="normal">The surface normal at the impact point.</param>
-        /// <param name="damage">The damage dealt by the impact.</param>
-        /// <param name="parentRef">Optional parent network object reference.</param>
-        public void PlayImpactEffect(Vector3 position, Vector3 normal, float damage, NetworkObjectReference parentRef)
+        /// <param name="position">
+        /// Impact position.
+        /// </param>
+        /// <param name="normal">
+        /// Impact surface normal.
+        /// </param>
+        /// <param name="damage">
+        /// Damage dealt by the impact.
+        /// </param>
+        /// <param name="parentRef">
+        /// Optional parent network object reference.
+        /// </param>
+        public void PlayImpactEffect(
+            Vector3 position,
+            Vector3 normal,
+            float damage,
+            NetworkObjectReference parentRef)
         {
-            PlayImpactEffectRpc(position, normal, damage, parentRef);
+            PlayImpactEffectRpc(
+                position,
+                normal,
+                damage,
+                parentRef
+            );
         }
 
         #endregion
@@ -343,133 +581,319 @@ namespace Blocks.Gameplay.Shooter
 
         private void HandleFiringMechanismShot()
         {
-            if (!CanFire()) return;
+            if (!CanFire())
+            {
+                return;
+            }
 
-            // Populate shooting context with all necessary data
-            m_ShootingContext.owner = m_OwnerPlayerManager.gameObject;
-            m_ShootingContext.origin = muzzle != null ? muzzle.position : m_AimTransform.position;
-            m_ShootingContext.direction = m_LiveFireDirection;
-            m_ShootingContext.muzzle = muzzle;
-            m_ShootingContext.damage = weaponData.weaponDamage;
-            m_ShootingContext.ownerClientId = OwnerClientId;
-            m_ShootingContext.hitMask = weaponData.hitMask;
-            m_ShootingContext.currentSpread = m_SpreadHandler.CurrentSpreadAngle;
-            m_ShootingContext.Weapon = this;
-            m_ShootingContext.OnAmmoConsumed = m_AmmoHandler.ConsumeAmmo;
-            m_ShootingContext.HasAmmoCheck = m_AmmoHandler.HasAmmo;
-            m_ShootingContext.OnTargetHit = null;
-            m_ShootingContext.OnHitPointCalculated = null;
+            // Populate shooting context with all necessary data.
+            m_ShootingContext.owner =
+                m_OwnerPlayerManager.gameObject;
 
-            m_ShootingBehavior.Shoot(m_ShootingContext);
+            m_ShootingContext.origin =
+                muzzle != null
+                    ? muzzle.position
+                    : m_AimTransform.position;
+
+            m_ShootingContext.direction =
+                m_LiveFireDirection;
+
+            m_ShootingContext.muzzle =
+                muzzle;
+
+            m_ShootingContext.damage =
+                weaponData.weaponDamage;
+
+            m_ShootingContext.ownerClientId =
+                OwnerClientId;
+
+            m_ShootingContext.hitMask =
+                weaponData.hitMask;
+
+            m_ShootingContext.currentSpread =
+                m_SpreadHandler.CurrentSpreadAngle;
+
+            m_ShootingContext.Weapon =
+                this;
+
+            m_ShootingContext.OnAmmoConsumed =
+                m_AmmoHandler.ConsumeAmmo;
+
+            m_ShootingContext.HasAmmoCheck =
+                m_AmmoHandler.HasAmmo;
+
+            m_ShootingContext.OnTargetHit =
+                null;
+
+            m_ShootingContext.OnHitPointCalculated =
+                null;
+
+            /*
+             * Execute the actual weapon shot first.
+             *
+             * At this point the firing mechanism has produced a legitimate
+             * shot and CanFire has already passed.
+             */
+            m_ShootingBehavior.Shoot(
+                m_ShootingContext
+            );
+
+            /*
+             * Gameplay noise is deliberately separate from presentation
+             * audio. NoiseEmitter forwards client-owned weapon noise to
+             * the authoritative server before NoiseSystem distributes it
+             * to AI hearing sensors.
+             */
+            noiseEmitter?.RequestEmit();
+
             m_SpreadHandler.IncreaseSpread();
-            PlayMuzzleFlashRpc(muzzle.position, muzzle.forward);
-            CoreDirector.RequestCameraShake()
-                .WithImpulseDefinition(CinemachineImpulseDefinition.ImpulseShapes.Recoil,
-                    CinemachineImpulseDefinition.ImpulseTypes.Propagating,
-                    0.2f)
-                .WithVelocity(weaponData.cameraShakeIntensity)
+
+            PlayMuzzleFlashRpc(
+                muzzle.position,
+                muzzle.forward
+            );
+
+            CoreDirector
+                .RequestCameraShake()
+                .WithImpulseDefinition(
+                    CinemachineImpulseDefinition
+                        .ImpulseShapes.Recoil,
+                    CinemachineImpulseDefinition
+                        .ImpulseTypes.Propagating,
+                    0.2f
+                )
+                .WithVelocity(
+                    weaponData.cameraShakeIntensity
+                )
                 .Execute();
 
-            m_StateManager.TransitionToState(WeaponState.Firing, 0.05f);
-            onWeaponFiredEvent?.Raise(m_FiringMechanism.FireRate);
+            m_StateManager.TransitionToState(
+                WeaponState.Firing,
+                0.05f
+            );
+
+            onWeaponFiredEvent?.Raise(
+                m_FiringMechanism.FireRate
+            );
         }
 
         private bool IsMuzzleObstructed()
         {
-            if (m_OwnerPlayerManager == null || muzzle == null) return false;
-
-            Vector3 chestPosition = m_OwnerPlayerManager.transform.position + Vector3.up * chestHeightOffset;
-
-            // Cache the muzzle direction and distance when weapon is not obstructed
-            // This allows us to use consistent local-space direction for obstruction checks even as the player rotates
-            if (!m_WasMuzzleObstructed)
+            if (m_OwnerPlayerManager == null ||
+                muzzle == null)
             {
-                Vector3 toMuzzle = muzzle.position - chestPosition;
-                m_CachedObstructionDirection = m_OwnerPlayerManager.transform.InverseTransformDirection(toMuzzle.normalized);
-                m_CachedObstructionDistance = toMuzzle.magnitude;
-                m_HasCachedObstructionData = true;
+                return false;
             }
 
-            if (!m_HasCachedObstructionData) return false;
+            Vector3 chestPosition =
+                m_OwnerPlayerManager.transform.position +
+                Vector3.up * chestHeightOffset;
 
-            // Convert the cached local-space direction back to world space for the raycast
-            Vector3 worldDirection = m_OwnerPlayerManager.transform.TransformDirection(m_CachedObstructionDirection);
-            return Physics.Raycast(chestPosition, worldDirection, m_CachedObstructionDistance, obstructionMask);
+            /*
+             * Cache muzzle direction and distance while unobstructed.
+             * This allows consistent local-space obstruction checks
+             * even while the character rotates.
+             */
+            if (!m_WasMuzzleObstructed)
+            {
+                Vector3 toMuzzle =
+                    muzzle.position -
+                    chestPosition;
+
+                m_CachedObstructionDirection =
+                    m_OwnerPlayerManager.transform
+                        .InverseTransformDirection(
+                            toMuzzle.normalized
+                        );
+
+                m_CachedObstructionDistance =
+                    toMuzzle.magnitude;
+
+                m_HasCachedObstructionData =
+                    true;
+            }
+
+            if (!m_HasCachedObstructionData)
+            {
+                return false;
+            }
+
+            Vector3 worldDirection =
+                m_OwnerPlayerManager.transform
+                    .TransformDirection(
+                        m_CachedObstructionDirection
+                    );
+
+            return Physics.Raycast(
+                chestPosition,
+                worldDirection,
+                m_CachedObstructionDistance,
+                obstructionMask
+            );
         }
 
         private void UpdateMuzzleObstructionState()
         {
-            if (m_OwnerPlayerManager?.AimController == null || !m_OwnerPlayerManager.AimController.IsAiming)
+            if (m_OwnerPlayerManager?.AimController == null ||
+                !m_OwnerPlayerManager.AimController.IsAiming)
             {
                 if (m_WasMuzzleObstructed)
                 {
                     m_WasMuzzleObstructed = false;
-                    m_OwnerPlayerManager?.ShooterAnimator?.Animator.SetBool(k_AnimIDIsColliding, false);
-                    m_OwnerPlayerManager?.AimController?.SetWeaponObstructed(false);
+
+                    m_OwnerPlayerManager?
+                        .ShooterAnimator?
+                        .Animator
+                        .SetBool(
+                            k_AnimIDIsColliding,
+                            false
+                        );
+
+                    m_OwnerPlayerManager?
+                        .AimController?
+                        .SetWeaponObstructed(false);
                 }
+
                 return;
             }
 
-            bool isObstructed = IsMuzzleObstructed();
-            if (isObstructed != m_WasMuzzleObstructed)
+            bool isObstructed =
+                IsMuzzleObstructed();
+
+            if (isObstructed ==
+                m_WasMuzzleObstructed)
             {
-                m_WasMuzzleObstructed = isObstructed;
-                m_OwnerPlayerManager?.ShooterAnimator?.Animator.SetBool(k_AnimIDIsColliding, isObstructed);
-                m_OwnerPlayerManager?.AimController?.SetWeaponObstructed(isObstructed);
+                return;
             }
+
+            m_WasMuzzleObstructed =
+                isObstructed;
+
+            m_OwnerPlayerManager?
+                .ShooterAnimator?
+                .Animator
+                .SetBool(
+                    k_AnimIDIsColliding,
+                    isObstructed
+                );
+
+            m_OwnerPlayerManager?
+                .AimController?
+                .SetWeaponObstructed(
+                    isObstructed
+                );
         }
 
+        #endregion
+
+        #region RPCs
+
         [Rpc(SendTo.Everyone)]
-        private void PlayMuzzleFlashRpc(Vector3 position, Vector3 muzzleDirection)
+        private void PlayMuzzleFlashRpc(
+            Vector3 position,
+            Vector3 muzzleDirection)
         {
-            CoreDirector.RequestAudio(weaponData.soundDefShoot)
+            CoreDirector
+                .RequestAudio(
+                    weaponData.soundDefShoot
+                )
                 .WithPosition(position)
-                .AsReserved(SoundEmitter.ReservedInfo.ReservedEmitter)
+                .AsReserved(
+                    SoundEmitter.ReservedInfo
+                        .ReservedEmitter
+                )
                 .Play();
 
-            CoreDirector.CreatePrefabEffect(weaponData.muzzleFlashPrefab)
+            CoreDirector
+                .CreatePrefabEffect(
+                    weaponData.muzzleFlashPrefab
+                )
                 .WithPosition(position)
                 .WithParent(transform)
-                .WithLookDirection(-muzzleDirection)
+                .WithLookDirection(
+                    -muzzleDirection
+                )
                 .WithName("MuzzleFlash")
                 .WithDuration(0.3f)
                 .Create();
 
-            CoreDirector.CreatePrefabEffect(weaponData.bulletShellPrefab)
-                .WithPosition(bulletShellEjectPoint.position)
-                .WithLookDirection(-muzzleDirection)
+            CoreDirector
+                .CreatePrefabEffect(
+                    weaponData.bulletShellPrefab
+                )
+                .WithPosition(
+                    bulletShellEjectPoint.position
+                )
+                .WithLookDirection(
+                    -muzzleDirection
+                )
                 .WithName("Shell")
                 .WithDuration(1f)
                 .Create();
         }
 
         [Rpc(SendTo.Everyone)]
-        public void PlayTracerEffectRpc(Vector3 start, Vector3 end)
+        public void PlayTracerEffectRpc(
+            Vector3 start,
+            Vector3 end)
         {
-            CoreDirector.CreateTracer(start, end)
-                .WithScale(new Vector3(weaponData.tracerRadius * 2f, Vector3.Distance(start, end) * 0.5f, weaponData.tracerRadius * 2f))
-                .WithMaterial(weaponData.tracerMaterial)
-                .WithDuration(weaponData.tracerDuration)
+            CoreDirector
+                .CreateTracer(
+                    start,
+                    end
+                )
+                .WithScale(
+                    new Vector3(
+                        weaponData.tracerRadius * 2f,
+                        Vector3.Distance(
+                            start,
+                            end
+                        ) * 0.5f,
+                        weaponData.tracerRadius * 2f
+                    )
+                )
+                .WithMaterial(
+                    weaponData.tracerMaterial
+                )
+                .WithDuration(
+                    weaponData.tracerDuration
+                )
                 .Create();
         }
 
         [Rpc(SendTo.Everyone)]
-        public void PlayImpactEffectRpc(Vector3 position, Vector3 normal, float damage, NetworkObjectReference parentRef)
+        public void PlayImpactEffectRpc(
+            Vector3 position,
+            Vector3 normal,
+            float damage,
+            NetworkObjectReference parentRef)
         {
-            Transform parent = null;
-            if (parentRef.TryGet(out var netObj))
+            Transform parent =
+                null;
+
+            if (parentRef.TryGet(
+                    out var netObj))
             {
-                parent = netObj.transform;
+                parent =
+                    netObj.transform;
             }
 
-            CoreDirector.CreatePrefabEffect(weaponData.impactEffectPrefab)
+            CoreDirector
+                .CreatePrefabEffect(
+                    weaponData.impactEffectPrefab
+                )
                 .WithPosition(position)
                 .WithParent(parent)
                 .WithLookDirection(normal)
-                .WithDuration(weaponData.impactEffectDuration)
+                .WithDuration(
+                    weaponData.impactEffectDuration
+                )
                 .Create();
 
-            CoreDirector.RequestAudio(weaponData.soundDefRicochet)
+            CoreDirector
+                .RequestAudio(
+                    weaponData.soundDefRicochet
+                )
                 .WithPosition(position)
                 .Play();
         }

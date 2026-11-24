@@ -48,6 +48,7 @@ GameObject:
   - component: {fileID: 4647857407002511820}
   - component: {fileID: 4770358315186992693}
   - component: {fileID: 2103164745006905613}
+  - component: {fileID: 4851034857683153198}
   m_Layer: 0
   m_Name: Weapon
   m_TagString: Untagged
@@ -139,6 +140,7 @@ MonoBehaviour:
   weaponData: {fileID: 11400000, guid: 2292b12658d6247af8bbfdd4cfa6f63f, type: 2}
   muzzle: {fileID: 3892111678295099518}
   bulletShellEjectPoint: {fileID: 1392978279787390460}
+  noiseEmitter: {fileID: 0}
   obstructionMask:
     serializedVersion: 2
     m_Bits: 55
@@ -217,6 +219,22 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Kits.GameplayNGO.Shooter.WeaponStateManager
   currentState: 0
+--- !u!114 &4851034857683153198
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3794482621055577394}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1f97df41986ee8141943a42f8ecc48d9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TheBureau.Gameplay.Perception.NoiseEmitter
+  ShowTopMostFoldoutHeaderGroup: 1
+  m_Profile: {fileID: 11400000, guid: 6116048063f977b4fac1e0a25f2fd0b5, type: 2}
+  m_EmissionOrigin: {fileID: 3892111678295099518}
+  m_LogEmission: 1
 --- !u!1 &8088137118841385260
 GameObject:
   m_ObjectHideFlags: 0

@@ -36,10 +36,10 @@ MonoBehaviour:
   spreadRecoveryDelay: 0.2
   spineOffset: {x: 2.7, y: 15, z: 0}
   spineAimWeight: 1
-  muzzleFlashPrefab: {fileID: 5128621479578589028, guid: d5370334ebfc741919094c943fa694ee, type: 3}
+  muzzleFlashPrefab: {fileID: 500345726442012828, guid: 50a810bfd70577b41a2d43ae0241ea2d, type: 3}
   bulletShellPrefab: {fileID: 1000013947318026, guid: 7ca96822084510147adb2aea03d45e3b, type: 3}
-  impactEffectPrefab: {fileID: 1000010355441670, guid: e0aa30b8adee8b44dac442776f34f5e7, type: 3}
-  impactEffectDuration: 2
+  impactEffectPrefab: {fileID: 824404068831305595, guid: e8ae6236a07007a49b77218e3e2451f9, type: 3}
+  impactEffectDuration: 0.5
   soundDefShoot: {fileID: 11400000, guid: fc81bfa0b72614d498bbd910628ff6ef, type: 2}
   soundDefRicochet: {fileID: 11400000, guid: 63fcf0cd26cdf9b469e10c16e8766af7, type: 2}
   tracerRadius: 0.002

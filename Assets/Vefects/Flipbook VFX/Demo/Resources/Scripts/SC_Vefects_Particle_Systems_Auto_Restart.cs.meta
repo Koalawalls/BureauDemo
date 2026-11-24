@@ -1,0 +1,18 @@
+fileFormatVersion: 2
+guid: be76434615d2ece42bea5413c073acd5
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences: []
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 322664
+  packageName: Flipbook VFX Bundle
+  packageVersion: 1.0.2026.069
+  assetPath: Assets/Vefects/Flipbook VFX/Demo/Resources/Scripts/SC_Vefects_Particle_Systems_Auto_Restart.cs
+  uploadId: 1008756
